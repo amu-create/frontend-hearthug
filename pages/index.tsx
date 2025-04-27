@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Layout from '../components/layout/Layout';
-import { FiMessageCircle, FiHeart, FiChartBar, FiArrowRight, FiCoffee } from 'react-icons/fi';
+import { FiMessageCircle, FiHeart, FiBarChart2, FiArrowRight, FiCoffee } from 'react-icons/fi';
 import { useAuth } from '../utils/auth';
 
 const HomePage: React.FC = () => {
@@ -66,7 +66,7 @@ const HomePage: React.FC = () => {
             
             <div className="bg-blue-50 p-6 rounded-xl shadow-md">
               <div className="w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl mb-4">
-                <FiChartBar />
+                <FiBarChart2 />
               </div>
               <h3 className="text-xl font-bold mb-2">감정 기록과 분석</h3>
               <p className="text-gray-600 mb-4">
