@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { FiMenu, FiX, FiHome, FiMessageCircle, FiChartLine, FiUser, FiLogIn, FiLogOut } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiMessageCircle, FiBarChart2, FiUser, FiLogIn, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../../utils/auth';
 
 const Header: React.FC = () => {
@@ -40,7 +40,7 @@ const Header: React.FC = () => {
             
             {user && (
               <Link href="/emotion" className={`flex items-center ${router.pathname === '/emotion' ? 'text-white font-bold' : 'text-white/80 hover:text-white'}`}>
-                <FiChartLine className="mr-1" /> 감정 기록
+                <FiBarChart2 className="mr-1" /> 감정 기록
               </Link>
             )}
             
@@ -92,7 +92,7 @@ const Header: React.FC = () => {
               <Link href="/emotion" 
                     className={`block py-2 px-4 ${router.pathname === '/emotion' ? 'bg-white/20 rounded-lg' : ''}`}
                     onClick={() => setMobileMenuOpen(false)}>
-                <FiChartLine className="inline mr-2" /> 감정 기록
+                <FiBarChart2 className="inline mr-2" /> 감정 기록
               </Link>
             )}
             
