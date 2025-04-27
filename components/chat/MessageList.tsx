@@ -1,6 +1,6 @@
 import React from 'react';
 import { Message } from './ChatBox';
-import { FiUser } from 'react-icons/fi';
+import { FiUser, FiCheck, FiClock } from 'react-icons/fi';
 
 interface MessageListProps {
   messages: Message[];
@@ -12,7 +12,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
     return text
       .replace(/\n/g, '<br>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>')
+      .replace(/`(.*?)`/g, '<code>$1</code>');
   };
 
   return (

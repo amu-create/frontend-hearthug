@@ -45,18 +45,22 @@ const ConversationStyle: React.FC<ConversationStyleProps> = ({
         {styleOptions.map((option) => (
           <button
             key={option.value}
-            className={`p-3 rounded-lg text-left transition-colors ${
+            className={`p-3 rounded-lg text-left transition-all ${
               currentStyle === option.value
-                ? 'bg-purple-100 border-purple-300 border-2'
-                : 'bg-gray-100 hover:bg-gray-200 border-2 border-transparent'
+                ? 'bg-purple-100 border-purple-500 border-2 shadow-md transform scale-[1.02]'
+                : 'bg-gray-100 hover:bg-gray-200 border-2 border-transparent hover:transform hover:scale-[1.01]'
             }`}
             onClick={() => onChange(option.value)}
           >
             <div className="text-xl mb-1">{option.emoji}</div>
-            <div className="font-medium">{option.label}</div>
-            <div className="text-xs text-gray-600">{option.description}</div>
+            <div className="font-medium text-sm">{option.label}</div>
+            <div className="text-xs text-gray-600 line-clamp-2">{option.description}</div>
           </button>
         ))}
+      </div>
+      <div className="text-xs text-gray-500 mt-2 flex items-center">
+        <span className="mr-2">💡</span>
+        <span>대화 스타일에 따라 마음돌봄이의 말투와 접근 방식이 달라집니다.</span>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiSend, FiAlertCircle, FiLoader, FiRefreshCw } from 'react-icons/fi';
+import { FiSend, FiInfo, FiLoader, FiRefreshCw } from 'react-icons/fi';
 import { chatApi } from '../../utils/api';
 import { useAuth } from '../../utils/auth';
 import MessageList from './MessageList';
@@ -37,7 +37,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     limitType: string;
   } | null>(null);
   const [chatStyle, setChatStyle] = useState<ChatStyle>('default');
+  const [showCrisisAlert, setShowCrisisAlert] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 메시지 목록 스크롤
   const scrollToBottom = () => {
@@ -48,6 +51,30 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 포커스 관리
+  useEffect(() => {
+    // 로딩이 끝나면 텍스트 영역에 포커스
+    if (!isLoading && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isLoading]);
+
+  // API 연결 상태 확인
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        setConnectionStatus('connecting');
+        await chatApi.checkUsage();
+        setConnectionStatus('connected');
+      } catch (err) {
+        console.error('API 연결 확인 오류:', err);
+        setConnectionStatus('error');
+      }
+    };
+    
+    checkConnection();
+  }, []);
 
   // 사용량 제한 확인
   const checkUsageLimit = async () => {
@@ -71,20 +98,25 @@ const ChatBox: React.FC<ChatBoxProps> = ({
 
   // 컴포넌트 마운트 시 사용량 확인
   useEffect(() => {
-    checkUsageLimit();
-  }, []);
+    if (connectionStatus === 'connected') {
+      checkUsageLimit();
+    }
+  }, [connectionStatus]);
 
   // 메시지 전송 처리
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 빈 메시지 체크
-    if (!newMessage.trim()) return;
+    // 빈 메시지 체크 또는 연결 문제 체크
+    if (!newMessage.trim() || isLoading || connectionStatus !== 'connected') return;
     
     const userMessage: Message = {
       role: 'user',
       content: newMessage
     };
+    
+    // 현재 메시지 저장
+    const currentMessage = newMessage;
     
     // 메시지 목록에 사용자 메시지 추가
     setMessages(prev => [...prev, userMessage]);
@@ -95,7 +127,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     try {
       // API 호출
       const response = await chatApi.sendMessage(
-        newMessage, 
+        currentMessage, 
         conversationId,
         chatStyle
       );
@@ -104,7 +136,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         // 응답 메시지 추가
         const assistantMessage: Message = {
           role: 'assistant',
-          content: response.data.message
+          content: response.data.message,
+          id: response.data.messageId
         };
         
         setMessages(prev => [...prev, assistantMessage]);
@@ -121,16 +154,17 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         
         // 위기 상황 표시
         if (response.data.hasCrisisSignal) {
-          console.warn('위기 신호 감지됨');
-          // TODO: 위기 상황에 대한 UI 표시 추가
+          setShowCrisisAlert(true);
         }
       }
     } catch (err: any) {
       console.error('메시지 전송 오류:', err);
-      setError(
-        err.response?.data?.message || 
-        '메시지 전송 중 오류가 발생했습니다. 다시 시도해주세요.'
-      );
+      setConnectionStatus('error');
+      
+      // 네트워크 오류 처리
+      if (err.message && err.message.includes('Network Error')) {
+        setConnectionStatus('error');
+      }
       
       // 사용량 제한 오류 처리
       if (err.response?.status === 429) {
@@ -144,6 +178,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   // 새 대화 시작
   const handleNewConversation = () => {
     setMessages([]);
+    setShowCrisisAlert(false);
     if (onNewConversation) {
       onNewConversation(0); // 0은 새 대화를 의미
     }
@@ -154,8 +189,62 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     setChatStyle(style);
   };
 
+  // 재연결 시도
+  const handleRetryConnection = () => {
+    setConnectionStatus('connecting');
+    checkUsageLimit().then(() => {
+      setConnectionStatus('connected');
+      setError(null);
+    }).catch(() => {
+      setConnectionStatus('error');
+    });
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-lg shadow-md overflow-hidden">
+      {/* 연결 상태 표시 */}
+      {connectionStatus !== 'connected' && (
+        <div className={`px-4 py-2 text-gray-700 text-sm ${
+          connectionStatus === 'connecting' 
+            ? 'bg-gray-100' 
+            : 'bg-gray-200'
+        }`}>
+          {connectionStatus === 'connecting' ? (
+            <div className="flex items-center">
+              <FiLoader className="animate-spin mr-2" />
+              서버에 연결 중입니다...
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FiInfo className="mr-2" />
+                서버 연결에 실패했습니다. 대화를 이용할 수 없습니다.
+              </div>
+              <button 
+                onClick={handleRetryConnection}
+                className="bg-white text-gray-600 px-2 py-1 rounded-md text-xs hover:bg-gray-100 border border-gray-300"
+              >
+                재연결
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* 위기 상황 알림 */}
+      {showCrisisAlert && (
+        <div className="px-4 py-3 bg-gray-100 text-gray-700 border-b flex items-start">
+          <FiInfo className="mr-2 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">안내 메시지</p>
+            <p className="text-sm mt-1">
+              지금 굉장히 힘드신 것 같아요. 이런 순간엔 혼자 견디지 않으셔도 돼요.
+              정신건강 지원 전화 1577-0199에 연락해 보실 수 있을까요?
+            </p>
+          </div>
+        </div>
+      )}
+      
       {/* 대화 스타일 선택 */}
       <div className="p-4 bg-gray-50 border-b">
         <ConversationStyle
@@ -182,28 +271,25 @@ const ChatBox: React.FC<ChatBoxProps> = ({
       </div>
       
       {/* 사용량 정보 표시 */}
-      {usageInfo && (
-        <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t">
-          {usageInfo.limitType === 'anonymous' ? (
-            <span>
-              비로그인 상태: 오늘 {usageInfo.remainingCount}회 대화 가능 
-              <span className="ml-1 text-purple-600 hover:underline cursor-pointer">
-                <a href="/login">로그인하여 더 많은 대화하기</a>
+      {usageInfo && connectionStatus === 'connected' && (
+        <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t flex items-center justify-between">
+          <div>
+            {usageInfo.limitType === 'anonymous' ? (
+              <span>
+                비로그인 상태: 오늘 {usageInfo.remainingCount}회 대화 가능 
               </span>
-            </span>
-          ) : (
-            <span>
-              남은 대화: {usageInfo.remainingCount}회
-            </span>
+            ) : (
+              <span>
+                남은 대화: {usageInfo.remainingCount}회
+              </span>
+            )}
+          </div>
+          
+          {usageInfo.limitType === 'anonymous' && (
+            <a href="/login" className="text-purple-600 hover:underline font-medium">
+              로그인하여 더 많은 대화하기 →
+            </a>
           )}
-        </div>
-      )}
-      
-      {/* 에러 메시지 */}
-      {error && (
-        <div className="px-4 py-3 bg-red-50 text-red-600 border-t flex items-center">
-          <FiAlertCircle className="mr-2 flex-shrink-0" />
-          <p className="text-sm">{error}</p>
         </div>
       )}
       
@@ -215,8 +301,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({
       >
         <div className="relative flex-grow">
           <textarea
+            ref={textareaRef}
             className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none transition"
-            placeholder="무슨 생각을 하고 계신가요?"
+            placeholder={
+              connectionStatus !== 'connected' 
+                ? "서버 연결이 필요합니다" 
+                : "무슨 생각을 하고 계신가요?"
+            }
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => {
@@ -226,7 +317,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
               }
             }}
             rows={3}
-            disabled={isLoading || !!error}
+            disabled={isLoading || connectionStatus !== 'connected'}
           />
           {isLoading && (
             <div className="absolute right-3 bottom-3 text-purple-500">
@@ -237,18 +328,18 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         <button
           type="submit"
           className={`ml-2 p-3 rounded-full ${
-            isLoading || !!error
+            isLoading || connectionStatus !== 'connected' || !newMessage.trim()
               ? 'bg-gray-300 cursor-not-allowed'
               : 'bg-purple-600 hover:bg-purple-700 text-white'
           } transition-colors`}
-          disabled={isLoading || !!error || !newMessage.trim()}
+          disabled={isLoading || connectionStatus !== 'connected' || !newMessage.trim()}
         >
           <FiSend />
         </button>
       </form>
       
       {/* 새 대화 버튼 */}
-      {messages.length > 0 && (
+      {messages.length > 0 && connectionStatus === 'connected' && (
         <div className="p-2 border-t text-center">
           <button
             onClick={handleNewConversation}

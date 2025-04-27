@@ -3,6 +3,11 @@ import axios from 'axios';
 // API 기본 URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
+// API 기본 URL 디버깅 로그
+if (typeof window !== 'undefined') {
+  console.log('API URL:', API_URL);
+}
+
 // Axios 인스턴스 생성
 const api = axios.create({
   baseURL: API_URL,
@@ -12,26 +17,49 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// 요청 인터셉터 설정 (토큰 추가)
+// 요청 인터셉터 설정 (토큰 추가 및 디버깅)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
+    // 디버깅용 요청 로그
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`${config.method?.toUpperCase()} ${config.url}`, config.data || '');
+    }
+    
     return config;
   },
   (error) => {
+    console.error('API 요청 오류:', error);
     return Promise.reject(error);
   }
 );
 
-// 응답 인터셉터 설정 (에러 처리)
+// 응답 인터셉터 설정 (에러 처리 및 디버깅)
 api.interceptors.response.use(
   (response) => {
+    // 디버깅용 응답 로그
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`응답: ${response.status}`, response.data);
+    }
     return response;
   },
   (error) => {
+    // 자세한 에러 로깅
+    console.error('API 응답 오류:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+      }
+    });
+    
     // 인증 오류 처리 (401)
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
@@ -42,25 +70,53 @@ api.interceptors.response.use(
       }
     }
     
+    // CORS 오류 처리
+    if (error.message && error.message.includes('Network Error')) {
+      console.error('CORS 또는 네트워크 오류가 발생했습니다. 백엔드 서버 설정을 확인하세요.');
+    }
+    
     return Promise.reject(error);
   }
 );
+
+// 자동 재시도 함수
+const withRetry = async (apiCall, maxRetries = 3, delay = 1000) => {
+  let retries = 0;
+  
+  while (retries < maxRetries) {
+    try {
+      return await apiCall();
+    } catch (error) {
+      retries++;
+      if (retries === maxRetries) {
+        throw error;
+      }
+      
+      console.log(`API 호출 실패, ${retries}번째 재시도...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      // 지수 백오프 적용
+      delay *= 2;
+    }
+  }
+};
 
 // 채팅 관련 API
 export const chatApi = {
   // 메시지 전송
   sendMessage: (message: string, conversationId?: number, conversationStyle?: string) => {
-    return api.post('/chat/send', { message, conversationId, conversationStyle });
+    return withRetry(() => 
+      api.post('/chat/send', { message, conversationId, conversationStyle })
+    );
   },
   
   // 대화 목록 조회
   getConversations: () => {
-    return api.get('/chat/conversations');
+    return withRetry(() => api.get('/chat/conversations'));
   },
   
   // 특정 대화의 메시지 조회
   getMessages: (conversationId: number) => {
-    return api.get(`/chat/messages/${conversationId}`);
+    return withRetry(() => api.get(`/chat/messages/${conversationId}`));
   },
   
   // 대화 삭제
