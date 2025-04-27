@@ -1,12 +1,7 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 // API 기본 URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-
-// API 기본 URL 디버깅 로그
-if (typeof window !== 'undefined') {
-  console.log('API URL:', API_URL);
-}
 
 // Axios 인스턴스 생성
 const api = axios.create({
@@ -17,49 +12,26 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// 요청 인터셉터 설정 (토큰 추가 및 디버깅)
+// 요청 인터셉터 설정 (토큰 추가)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
-    // 디버깅용 요청 로그
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`${config.method?.toUpperCase()} ${config.url}`, config.data || '');
-    }
-    
     return config;
   },
   (error) => {
-    console.error('API 요청 오류:', error);
     return Promise.reject(error);
   }
 );
 
-// 응답 인터셉터 설정 (에러 처리 및 디버깅)
+// 응답 인터셉터 설정 (에러 처리)
 api.interceptors.response.use(
   (response) => {
-    // 디버깅용 응답 로그
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`응답: ${response.status}`, response.data);
-    }
     return response;
   },
   (error) => {
-    // 자세한 에러 로깅
-    console.error('API 응답 오류:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        headers: error.config?.headers,
-      }
-    });
-    
     // 인증 오류 처리 (401)
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
@@ -70,17 +42,15 @@ api.interceptors.response.use(
       }
     }
     
-    // CORS 오류 처리
-    if (error.message && error.message.includes('Network Error')) {
-      console.error('CORS 또는 네트워크 오류가 발생했습니다. 백엔드 서버 설정을 확인하세요.');
-    }
-    
     return Promise.reject(error);
   }
 );
 
+// 타입 정의
+type ApiCallFunction = () => Promise<AxiosResponse<any>>;
+
 // 자동 재시도 함수
-const withRetry = async (apiCall, maxRetries = 3, delay = 1000) => {
+const withRetry = async (apiCall: ApiCallFunction, maxRetries = 3, delay = 1000): Promise<AxiosResponse<any>> => {
   let retries = 0;
   
   while (retries < maxRetries) {
@@ -98,6 +68,10 @@ const withRetry = async (apiCall, maxRetries = 3, delay = 1000) => {
       delay *= 2;
     }
   }
+  
+  // TypeScript 에러를 피하기 위한 더미 리턴
+  // 이 코드는 실행되지 않지만, TypeScript 컴파일러를 만족시키기 위해 필요함
+  throw new Error('재시도 실패');
 };
 
 // 채팅 관련 API
