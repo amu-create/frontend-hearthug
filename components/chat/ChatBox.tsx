@@ -11,6 +11,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   createdAt?: string;
+  status?: 'sent' | 'pending' | 'error'; // status 속성 추가
 }
 
 // 대화 스타일 타입 정의
@@ -112,7 +113,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     
     const userMessage: Message = {
       role: 'user',
-      content: newMessage
+      content: newMessage,
+      status: 'sent'
     };
     
     // 현재 메시지 저장
