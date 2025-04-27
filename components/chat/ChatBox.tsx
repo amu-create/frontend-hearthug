@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiSend, FiInfo, FiLoader, FiRefreshCw } from 'react-icons/fi';
+import { FiSend, FiInfo, FiLoader, FiRefreshCw, FiMessageCircle } from 'react-icons/fi';
 import { chatApi } from '../../utils/api';
 import { useAuth } from '../../utils/auth';
 import MessageList from './MessageList';
@@ -201,14 +201,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-full">
       {/* 연결 상태 표시 */}
       {connectionStatus !== 'connected' && (
-        <div className={`px-4 py-2 text-gray-700 text-sm ${
-          connectionStatus === 'connecting' 
-            ? 'bg-gray-100' 
-            : 'bg-gray-200'
-        }`}>
+        <div className="px-4 py-2 bg-gray-100 text-gray-700 text-sm border-b">
           {connectionStatus === 'connecting' ? (
             <div className="flex items-center">
               <FiLoader className="animate-spin mr-2" />
@@ -222,7 +218,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
               </div>
               <button 
                 onClick={handleRetryConnection}
-                className="bg-white text-gray-600 px-2 py-1 rounded-md text-xs hover:bg-gray-100 border border-gray-300"
+                className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs hover:bg-blue-600"
               >
                 재연결
               </button>
@@ -257,7 +253,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({
       <div className="flex-grow overflow-y-auto p-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 space-y-4">
-            <div className="text-6xl mb-2">💖</div>
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 text-4xl">
+              <FiMessageCircle />
+            </div>
             <h3 className="text-xl font-medium">마음돌봄이와 대화를 시작해보세요</h3>
             <p className="max-w-md">
               오늘의 기분이나 생각을 자유롭게 이야기해보세요.
@@ -286,10 +284,18 @@ const ChatBox: React.FC<ChatBoxProps> = ({
           </div>
           
           {usageInfo.limitType === 'anonymous' && (
-            <a href="/login" className="text-purple-600 hover:underline font-medium">
+            <a href="/login" className="text-blue-500 hover:underline font-medium">
               로그인하여 더 많은 대화하기 →
             </a>
           )}
+        </div>
+      )}
+      
+      {/* 에러 메시지 */}
+      {error && (
+        <div className="px-4 py-3 bg-gray-100 text-gray-700 border-t flex items-center">
+          <FiInfo className="mr-2 flex-shrink-0" />
+          <p className="text-sm">{error}</p>
         </div>
       )}
       
@@ -302,7 +308,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         <div className="relative flex-grow">
           <textarea
             ref={textareaRef}
-            className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none transition"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
             placeholder={
               connectionStatus !== 'connected' 
                 ? "서버 연결이 필요합니다" 
@@ -320,7 +326,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
             disabled={isLoading || connectionStatus !== 'connected'}
           />
           {isLoading && (
-            <div className="absolute right-3 bottom-3 text-purple-500">
+            <div className="absolute right-3 bottom-3 text-blue-500">
               <FiLoader className="animate-spin" size={20} />
             </div>
           )}
@@ -330,7 +336,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
           className={`ml-2 p-3 rounded-full ${
             isLoading || connectionStatus !== 'connected' || !newMessage.trim()
               ? 'bg-gray-300 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-700 text-white'
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
           } transition-colors`}
           disabled={isLoading || connectionStatus !== 'connected' || !newMessage.trim()}
         >
@@ -343,7 +349,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         <div className="p-2 border-t text-center">
           <button
             onClick={handleNewConversation}
-            className="inline-flex items-center text-sm text-purple-600 hover:text-purple-800"
+            className="inline-flex items-center text-sm text-blue-500 hover:text-blue-700"
           >
             <FiRefreshCw className="mr-1" /> 새 대화 시작하기
           </button>

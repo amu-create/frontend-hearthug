@@ -1,125 +1,182 @@
-import React, { useState } from 'react';
-import { useRouter } from 'next/router';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiMenu, FiX, FiHome, FiMessageCircle, FiBarChart2, FiUser, FiLogIn, FiLogOut } from 'react-icons/fi';
-import { useAuth } from '../../utils/auth';
+import { useRouter } from 'next/router';
+import { FiHome, FiMessageSquare, FiBarChart, FiUser, FiMenu, FiX, FiLogIn, FiLogOut, FiHeart } from 'react-icons/fi';
 
-const Header: React.FC = () => {
-  const router = useRouter();
-  const { user, logout } = useAuth();
+interface HeaderProps {
+  isLoggedIn?: boolean;
+  onLogout?: () => void;
+  user?: {
+    name: string;
+    remainingChats?: number;
+  };
+}
+
+const Header: React.FC<HeaderProps> = ({ 
+  isLoggedIn = false, 
+  onLogout, 
+  user = { name: '', remainingChats: 0 } 
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
 
+  // 현재 페이지 경로 확인을 위한 헬퍼 함수
+  const isActive = (path: string) => router.pathname === path;
+
+  // 모바일 메뉴 토글
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.push('/');
-    setMobileMenuOpen(false);
-  };
+  // 스크롤 시 메뉴 닫기
+  useEffect(() => {
+    const handleScroll = () => {
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [mobileMenuOpen]);
+
+  // 네비게이션 항목 데이터
+  const navItems = [
+    { href: '/', icon: <FiHome />, label: '홈' },
+    { href: '/chat', icon: <FiMessageSquare />, label: '상담하기' },
+    { href: '/dashboard', icon: <FiBarChart />, label: '감정기록', authRequired: true },
+    { href: '/profile', icon: <FiUser />, label: '내 정보', authRequired: true },
+  ];
 
   return (
-    <header className="bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex justify-between items-center">
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3 md:py-4">
+        <div className="flex items-center justify-between">
           {/* 로고 */}
-          <Link href="/" className="flex items-center">
-            <span className="text-2xl font-bold">💖 HeartHug</span>
+          <Link 
+            href="/" 
+            className="flex items-center text-blue-600 font-bold text-xl md:text-2xl"
+          >
+            <FiHeart className="mr-2 text-pink-500" />
+            <span>마음돌봄이</span>
           </Link>
 
-          {/* 데스크톱 메뉴 */}
-          <nav className="hidden md:flex space-x-6 items-center">
-            <Link href="/" className={`flex items-center ${router.pathname === '/' ? 'text-white font-bold' : 'text-white/80 hover:text-white'}`}>
-              <FiHome className="mr-1" /> 홈
-            </Link>
-            
-            <Link href="/chat" className={`flex items-center ${router.pathname === '/chat' ? 'text-white font-bold' : 'text-white/80 hover:text-white'}`}>
-              <FiMessageCircle className="mr-1" /> 상담하기
-            </Link>
-            
-            {user && (
-              <Link href="/emotion" className={`flex items-center ${router.pathname === '/emotion' ? 'text-white font-bold' : 'text-white/80 hover:text-white'}`}>
-                <FiBarChart2 className="mr-1" /> 감정 기록
-              </Link>
-            )}
-            
-            {user ? (
-              <>
-                <Link href="/profile" className={`flex items-center ${router.pathname === '/profile' ? 'text-white font-bold' : 'text-white/80 hover:text-white'}`}>
-                  <FiUser className="mr-1" /> 내 정보
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center bg-white/10 hover:bg-white/20 rounded-full px-4 py-2 transition-colors"
+          {/* 데스크탑 네비게이션 */}
+          <nav className="hidden md:flex items-center space-x-1">
+            {navItems
+              .filter(item => !item.authRequired || isLoggedIn)
+              .map(item => (
+                <Link 
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    px-3 py-2 rounded-md text-sm font-medium flex items-center
+                    ${isActive(item.href) 
+                      ? 'bg-blue-50 text-blue-700' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                    }
+                  `}
                 >
-                  <FiLogOut className="mr-1" /> 로그아웃
-                </button>
-              </>
+                  <span className="mr-1.5">{item.icon}</span>
+                  {item.label}
+                </Link>
+              ))
+            }
+
+            {/* 로그인/로그아웃 버튼 */}
+            {isLoggedIn ? (
+              <button
+                onClick={onLogout}
+                className="ml-2 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md flex items-center"
+              >
+                <FiLogOut className="mr-1.5" />
+                로그아웃
+              </button>
             ) : (
-              <Link href="/login" className="flex items-center bg-white/10 hover:bg-white/20 rounded-full px-4 py-2 transition-colors">
-                <FiLogIn className="mr-1" /> 로그인
+              <Link
+                href="/login"
+                className="ml-2 px-3 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 flex items-center"
+              >
+                <FiLogIn className="mr-1.5" />
+                로그인
               </Link>
             )}
           </nav>
 
-          {/* 모바일 메뉴 토글 버튼 */}
-          <button
-            className="md:hidden text-white p-2"
+          {/* 모바일 메뉴 버튼 */}
+          <button 
+            className="md:hidden text-gray-600 focus:outline-none" 
             onClick={toggleMobileMenu}
-            aria-label="메뉴 토글"
           >
-            {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            {mobileMenuOpen ? (
+              <FiX className="w-6 h-6" />
+            ) : (
+              <FiMenu className="w-6 h-6" />
+            )}
           </button>
         </div>
 
-        {/* 모바일 메뉴 */}
-        {mobileMenuOpen && (
-          <nav className="md:hidden mt-4 pb-2 space-y-3">
-            <Link href="/" 
-                  className={`block py-2 px-4 ${router.pathname === '/' ? 'bg-white/20 rounded-lg' : ''}`}
-                  onClick={() => setMobileMenuOpen(false)}>
-              <FiHome className="inline mr-2" /> 홈
-            </Link>
-            
-            <Link href="/chat" 
-                  className={`block py-2 px-4 ${router.pathname === '/chat' ? 'bg-white/20 rounded-lg' : ''}`}
-                  onClick={() => setMobileMenuOpen(false)}>
-              <FiMessageCircle className="inline mr-2" /> 상담하기
-            </Link>
-            
-            {user && (
-              <Link href="/emotion" 
-                    className={`block py-2 px-4 ${router.pathname === '/emotion' ? 'bg-white/20 rounded-lg' : ''}`}
-                    onClick={() => setMobileMenuOpen(false)}>
-                <FiBarChart2 className="inline mr-2" /> 감정 기록
-              </Link>
-            )}
-            
-            {user ? (
-              <>
-                <Link href="/profile" 
-                      className={`block py-2 px-4 ${router.pathname === '/profile' ? 'bg-white/20 rounded-lg' : ''}`}
-                      onClick={() => setMobileMenuOpen(false)}>
-                  <FiUser className="inline mr-2" /> 내 정보
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left py-2 px-4 bg-white/10 rounded-lg mt-2"
-                >
-                  <FiLogOut className="inline mr-2" /> 로그아웃
-                </button>
-              </>
-            ) : (
-              <Link href="/login" 
-                    className="block py-2 px-4 bg-white/10 rounded-lg"
-                    onClick={() => setMobileMenuOpen(false)}>
-                <FiLogIn className="inline mr-2" /> 로그인
-              </Link>
-            )}
-          </nav>
+        {/* 잔여 상담 횟수 표시 (로그인 된 경우) */}
+        {isLoggedIn && user.remainingChats !== undefined && (
+          <div className="mt-2 text-sm text-gray-600 flex justify-end items-center">
+            <FiMessageSquare className="mr-1" />
+            <span>남은 상담: <strong>{user.remainingChats}회</strong></span>
+          </div>
         )}
       </div>
+
+      {/* 모바일 메뉴 */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-200">
+          <div className="container mx-auto px-4 py-2">
+            <nav className="flex flex-col space-y-1">
+              {navItems
+                .filter(item => !item.authRequired || isLoggedIn)
+                .map(item => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`
+                      px-3 py-3 rounded-md text-sm font-medium flex items-center
+                      ${isActive(item.href) 
+                        ? 'bg-blue-50 text-blue-700' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                      }
+                    `}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span className="mr-2">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                ))
+              }
+
+              {/* 로그인/로그아웃 버튼 */}
+              {isLoggedIn ? (
+                <button
+                  onClick={() => {
+                    if (onLogout) onLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="px-3 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md flex items-center"
+                >
+                  <FiLogOut className="mr-2" />
+                  로그아웃
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="px-3 py-3 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 flex items-center"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <FiLogIn className="mr-2" />
+                  로그인
+                </Link>
+              )}
+            </nav>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

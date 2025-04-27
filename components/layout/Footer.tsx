@@ -1,63 +1,52 @@
 import React from 'react';
 import Link from 'next/link';
-import { FiHeart, FiCoffee } from 'react-icons/fi';
+import { FiHeart, FiMail, FiGithub } from 'react-icons/fi';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
-
+  
   return (
-    <footer className="bg-gray-100 text-gray-600 py-8 mt-auto">
+    <footer className="bg-white border-t border-gray-200 py-6">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          {/* 로고 및 저작권 */}
-          <div className="mb-4 md:mb-0">
-            <div className="flex items-center mb-2">
-              <span className="text-xl font-bold text-purple-600">💖 HeartHug</span>
+          <div className="flex items-center mb-4 md:mb-0">
+            <FiHeart className="text-pink-500 mr-2" />
+            <span className="text-blue-600 font-bold text-lg">마음돌봄이</span>
+          </div>
+          
+          <div className="flex flex-col md:flex-row md:items-center text-sm text-gray-600">
+            <div className="mb-3 md:mb-0 md:mr-6 text-center md:text-left">
+              <p>&copy; {currentYear} 마음돌봄이. 모든 권리 보유.</p>
+              <p className="mt-1">당신의 마음을 돌보는 AI 친구</p>
             </div>
-            <p className="text-sm">
-              &copy; {currentYear} HeartHug (마음돌봄이). 모든 권리 보유.
-            </p>
-          </div>
-
-          {/* 기본 링크 */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-            <Link href="/about" className="hover:text-purple-600 transition-colors">
-              서비스 소개
-            </Link>
-            <Link href="/terms" className="hover:text-purple-600 transition-colors">
-              이용약관
-            </Link>
-            <Link href="/privacy" className="hover:text-purple-600 transition-colors">
-              개인정보처리방침
-            </Link>
-            <Link href="/support" className="hover:text-purple-600 transition-colors">
-              고객지원
-            </Link>
-          </div>
-
-          {/* 도네이션 버튼 */}
-          <div className="mt-6 md:mt-0">
-            <Link
-              href="/donate"
-              className="flex items-center bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full px-6 py-2 hover:shadow-lg transition-shadow"
-            >
-              <FiCoffee className="mr-2" />
-              개발자에게 커피 한 잔
-            </Link>
-            <p className="text-xs mt-2 text-center text-gray-500">
-              여러분의 작은 도움이 큰 힘이 됩니다.
-            </p>
+            
+            <div className="flex space-x-4">
+              <Link 
+                href="/privacy" 
+                className="text-gray-600 hover:text-blue-500 transition-colors"
+              >
+                개인정보 처리방침
+              </Link>
+              <Link 
+                href="/terms" 
+                className="text-gray-600 hover:text-blue-500 transition-colors"
+              >
+                이용약관
+              </Link>
+              <a 
+                href="mailto:support@hearthug.com" 
+                className="text-gray-600 hover:text-blue-500 transition-colors flex items-center"
+              >
+                <FiMail className="mr-1" />
+                문의하기
+              </a>
+            </div>
           </div>
         </div>
-
-        {/* 추가 정보 */}
-        <div className="mt-8 text-center text-xs text-gray-500">
-          <p className="mb-1">
-            HeartHug는 전문적인 심리 상담 서비스가 아닙니다. 정신건강 이슈는 전문가와 상담하세요.
-          </p>
-          <p className="flex items-center justify-center">
-            Made with <FiHeart className="mx-1 text-red-500" /> 마음돌봄이 팀
-          </p>
+        
+        <div className="mt-6 pt-4 border-t border-gray-100 text-center text-xs text-gray-500">
+          <p>마음돌봄이는 전문 심리상담을 대체하지 않습니다. 긴급한 도움이 필요하시면 전문가와 상담하세요.</p>
+          <p className="mt-1">위기 상담 전화: 1577-0199 (자살예방핫라인)</p>
         </div>
       </div>
     </footer>

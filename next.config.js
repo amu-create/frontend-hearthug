@@ -2,21 +2,14 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  images: {
-    domains: ['localhost'],
-  },
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
-  },
-  async redirects() {
+  async rewrites() {
     return [
       {
-        source: '/dashboard',
-        destination: '/emotion',
-        permanent: true,
+        source: '/api/:path*',
+        destination: 'https://hearthug.netlify.app/api/:path*', // API 요청을 netlify 서버로 리다이렉트
       },
     ];
   },
-}
+};
 
 module.exports = nextConfig;
