@@ -13,7 +13,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
       .replace(/\n/g, '<br>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>')
+      // s 플래그를 사용하지 않는 방식으로 수정
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`(.*?)`/g, '<code>$1</code>');
   };
 
